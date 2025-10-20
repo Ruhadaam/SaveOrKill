@@ -2,6 +2,18 @@
   "scheme": "acme",
   "userInterfaceStyle": "automatic",
   "orientation": "default",
+  "ios": {
+    "infoPlist": {
+      "NSPhotoLibraryUsageDescription": "Uygulama fotoğraf ve video albümlerinizi listelemek için galerinizin erişimine ihtiyaç duyar."
+    }
+  },
+  "android": {
+    "permissions": [
+      "READ_MEDIA_IMAGES",
+      "READ_MEDIA_VIDEO",
+      "READ_EXTERNAL_STORAGE"
+    ]
+  },
   "web": {
     "output": "static"
   },
