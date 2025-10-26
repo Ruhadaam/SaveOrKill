@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, FlatList, Image, Dimensions, ActivityIndicator, Text } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import { Link, useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 import { useLayoutEffect } from "react";
 
@@ -16,25 +16,37 @@ export default function AlbumPhotos() {
   const [permissionStatus, setPermissionStatus] = useState<MediaLibrary.PermissionStatus | null>(null);
   const navigation = useNavigation();
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await MediaLibrary.getPermissionsAsync();
-      if (status !== "granted") {
-        const res = await MediaLibrary.requestPermissionsAsync();
-        setPermissionStatus(res.status);
-        if (res.status !== "granted") return;
-      } else {
-        setPermissionStatus(status);
-      }
-      setLoading(true);
-      try {
-        const page = await MediaLibrary.getAssetsAsync({ album: String(albumId), mediaType: MediaLibrary.MediaType.photo, first: 2000, sortBy: MediaLibrary.SortBy.creationTime });
-        setAssets(page.assets);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const loadAssets = useCallback(async () => {
+    const { status } = await MediaLibrary.getPermissionsAsync();
+    if (status !== "granted") {
+      const res = await MediaLibrary.requestPermissionsAsync();
+      setPermissionStatus(res.status);
+      if (res.status !== "granted") return;
+    } else {
+      setPermissionStatus(status);
+    }
+    setLoading(true);
+    try {
+      const page = await MediaLibrary.getAssetsAsync({ album: String(albumId), mediaType: MediaLibrary.MediaType.photo, first: 2000, sortBy: MediaLibrary.SortBy.creationTime });
+      setAssets(page.assets);
+    } finally {
+      setLoading(false);
+    }
   }, [albumId]);
+
+  useEffect(() => {
+    loadAssets();
+  }, [loadAssets]);
+
+  // Reload when page comes into focus (only if we navigated from delete)
+  useFocusEffect(
+    useCallback(() => {
+      const timer = setTimeout(() => {
+        loadAssets();
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [loadAssets])
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({

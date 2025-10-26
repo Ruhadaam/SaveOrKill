@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, Pressable, FlatList, ActivityIndicator, Platform, TouchableOpacity } from "react-native";
 import * as MediaLibrary from "expo-media-library";
 import { BlurView } from "expo-blur";
@@ -27,7 +27,7 @@ export default function FotograflarIndex() {
     }
   }
 
-  async function loadPhotoAlbums() {
+  const loadPhotoAlbums = useCallback(async () => {
     setLoading(true);
     try {
       const result = await MediaLibrary.getAlbumsAsync({ includeSmartAlbums: true });
@@ -43,7 +43,7 @@ export default function FotograflarIndex() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     (async () => {
