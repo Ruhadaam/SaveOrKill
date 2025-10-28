@@ -1,8 +1,29 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, Pressable, FlatList, ActivityIndicator, Platform, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, ActivityIndicator, Platform, TouchableOpacity } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import { BlurView } from "expo-blur";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
+import { GlassView } from 'expo-glass-effect';
+
+const getAlbumEmoji = (albumTitle: string) => {
+  const lowerCaseTitle = albumTitle.toLowerCase();
+  if (lowerCaseTitle.includes("whatsapp")) return "💬";
+  if (lowerCaseTitle.includes("camera")) return "📸";
+  if (lowerCaseTitle.includes("screenshots")) return "🖼️";
+  if (lowerCaseTitle.includes("downloads")) return "📥";
+  if (lowerCaseTitle.includes("favorites")) return "⭐";
+  if (lowerCaseTitle.includes("selfies")) return "🤳";
+  if (lowerCaseTitle.includes("videos")) return "🎥";
+  if (lowerCaseTitle.includes("panoramas")) return "🏞️";
+  if (lowerCaseTitle.includes("live photos")) return "📹";
+  if (lowerCaseTitle.includes("bursts")) return "💥";
+  if (lowerCaseTitle.includes("instagram")) return "📸";
+  if (lowerCaseTitle.includes("snapchat")) return "👻";
+  if (lowerCaseTitle.includes("facebook")) return "👍";
+  if (lowerCaseTitle.includes("messenger")) return "💬";
+  if (lowerCaseTitle.includes("twitter")) return "🐦";
+  if (lowerCaseTitle.includes("tiktok")) return "🎵";
+  return "📁";
+};
 
 export default function FotograflarIndex() {
   const [permissionStatus, setPermissionStatus] = useState<MediaLibrary.PermissionStatus | null>(null);
@@ -52,19 +73,29 @@ export default function FotograflarIndex() {
     })();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        const ok = await ensurePermission();
+        if (ok) await loadPhotoAlbums();
+      })();
+    }, [loadPhotoAlbums])
+  );
+
   if (permissionStatus !== "granted") {
     return (
       <View className="flex-1 items-center justify-center gap-3 p-4">
         <Text className="text-lg text-center">Galeri erişimi gerekiyor.</Text>
-        <Pressable
+        <TouchableOpacity
           onPress={async () => {
             const ok = await ensurePermission();
             if (ok) await loadPhotoAlbums();
+            console.log("Galeriye İzin Verildi");
           }}
           className="px-4 py-2 rounded-md bg-gray-900"
         >
-          <Text className="text-gray-50">İzin Ver</Text>
-        </Pressable>
+          <Text className="text-gray-50">Galeriye İzin Ver</Text>
+        </TouchableOpacity>
         {error ? <Text className="text-red-600 text-center">{error}</Text> : null}
       </View>
     );
@@ -85,19 +116,26 @@ export default function FotograflarIndex() {
         keyExtractor={(a) => `${a.album.id}`}
         contentContainerStyle={{ padding: 16, gap: 12 }}
         renderItem={({ item }) => {
+          const majorVersion = Platform.OS === 'ios' ? parseInt(String(Platform.Version), 10) : 0;
+          const isIOS18 = majorVersion >= 18;
+
           const content = (
-            <View className="p-4 rounded-xl border border-gray-200 bg-white/80">
-              <Text className="text-base font-semibold">{item.album.title}</Text>
+            <View className="p-4">
+              <Text className="text-base font-semibold">{getAlbumEmoji(item.album.title)} {item.album.title}</Text>
               <Text className="text-xs text-gray-600 mt-1">{item.count} fotoğraf</Text>
             </View>
           );
-          const wrapped = Platform.OS === "ios" ? (
-            <BlurView intensity={30} tint="systemMaterial" style={{ borderRadius: 12, overflow: "hidden" }}>
+
+          const wrapped = isIOS18 ? (
+            <View style={{ borderRadius: 12, overflow: "hidden", backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
               {content}
-            </BlurView>
+            </View>
           ) : (
-            content
+            <GlassView style={{ borderRadius: 12, overflow: "hidden" }}>
+              {content}
+            </GlassView>
           );
+
           return (
             <Link href={`/(tabs)/fotograflar/${item.album.id}`} asChild>
               <TouchableOpacity activeOpacity={0.7}>{wrapped}</TouchableOpacity>

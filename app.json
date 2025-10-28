@@ -5,14 +5,19 @@
   "ios": {
     "infoPlist": {
       "NSPhotoLibraryUsageDescription": "Uygulama fotoğraf ve video albümlerinizi listelemek için galerinizin erişimine ihtiyaç duyar."
-    }
+    },
+    "bundleIdentifier": "com.ruhadam.myapp"
   },
   "android": {
     "permissions": [
       "READ_MEDIA_IMAGES",
       "READ_MEDIA_VIDEO",
+      "READ_EXTERNAL_STORAGE",
+      "READ_MEDIA_IMAGES",
+      "READ_MEDIA_VIDEO",
       "READ_EXTERNAL_STORAGE"
-    ]
+    ],
+    "package": "com.ruhadam.myapp"
   },
   "web": {
     "output": "static"
