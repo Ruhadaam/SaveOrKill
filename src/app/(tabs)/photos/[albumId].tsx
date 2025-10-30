@@ -51,8 +51,8 @@ export default function AlbumPhotos() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Link href={`/(tabs)/fotograflar/start/${albumId}`} asChild>
-          <Text className="text-blue-600 px-3 py-1">Başla</Text>
+        <Link href={`/(tabs)/photos/start/${albumId}`} asChild>
+          <Text className="text-blue-600 px-3 py-1">Start</Text>
         </Link>
       ),
     });
@@ -69,7 +69,7 @@ export default function AlbumPhotos() {
   if (!assets.length) {
     return (
       <View className="flex-1 items-center justify-center p-8">
-        <Text>Bu albümde fotoğraf bulunamadı.</Text>
+        <Text>No photos found in this album.</Text>
       </View>
     );
   }

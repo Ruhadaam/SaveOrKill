@@ -25,7 +25,7 @@ const getAlbumEmoji = (albumTitle: string) => {
   return "📁";
 };
 
-export default function FotograflarIndex() {
+export default function PhotosIndex() {
   const [permissionStatus, setPermissionStatus] = useState<MediaLibrary.PermissionStatus | null>(null);
   const [albums, setAlbums] = useState<{ album: MediaLibrary.Album; count: number }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,7 +43,7 @@ export default function FotograflarIndex() {
       setPermissionStatus(status);
       return true;
     } catch (e) {
-      setError("İzin alınırken bir hata oluştu");
+      setError("An error occurred while getting permission");
       return false;
     }
   }
@@ -60,7 +60,7 @@ export default function FotograflarIndex() {
       );
       setAlbums(withCounts.filter((x) => x.count > 0));
     } catch (e) {
-      setError("Albümler yüklenirken bir hata oluştu");
+      setError("An error occurred while loading albums");
     } finally {
       setLoading(false);
     }
@@ -85,16 +85,16 @@ export default function FotograflarIndex() {
   if (permissionStatus !== "granted") {
     return (
       <View className="flex-1 items-center justify-center gap-3 p-4">
-        <Text className="text-lg text-center">Galeri erişimi gerekiyor.</Text>
+        <Text className="text-lg text-center">Gallery access is required.</Text>
         <TouchableOpacity
           onPress={async () => {
             const ok = await ensurePermission();
             if (ok) await loadPhotoAlbums();
-            console.log("Galeriye İzin Verildi");
+            console.log("Permission granted to gallery");
           }}
           className="px-4 py-2 rounded-md bg-gray-900"
         >
-          <Text className="text-gray-50">Galeriye İzin Ver</Text>
+          <Text className="text-gray-50">Allow Gallery Access</Text>
         </TouchableOpacity>
         {error ? <Text className="text-red-600 text-center">{error}</Text> : null}
       </View>
@@ -122,7 +122,7 @@ export default function FotograflarIndex() {
           const content = (
             <View className="p-4">
               <Text className="text-base font-semibold">{getAlbumEmoji(item.album.title)} {item.album.title}</Text>
-              <Text className="text-xs text-gray-600 mt-1">{item.count} fotoğraf</Text>
+              <Text className="text-xs text-gray-600 mt-1">{item.count} photo</Text>
             </View>
           );
 
@@ -137,14 +137,14 @@ export default function FotograflarIndex() {
           );
 
           return (
-            <Link href={`/(tabs)/fotograflar/${item.album.id}`} asChild>
+            <Link href={`/(tabs)/photos/${item.album.id}`} asChild>
               <TouchableOpacity activeOpacity={0.7}>{wrapped}</TouchableOpacity>
             </Link>
           );
         }}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center p-8">
-            <Text>Fotoğraf içeren albüm bulunamadı.</Text>
+            <Text>No albums containing photos were found.</Text>
           </View>
         }
       />

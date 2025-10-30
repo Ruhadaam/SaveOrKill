@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useLayoutEffect, useRef } from "react";
+import React, { useEffect, useState, useLayoutEffect } from "react";
 import { View, Image, ActivityIndicator, Text, TouchableOpacity, Alert, Platform, Dimensions,StyleSheet } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView, GlassContainer } from 'expo-glass-effect';
@@ -18,24 +17,20 @@ import Animated, {
   FadeOutLeft,
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
-const { width: screenWidth } = Dimensions.get('window');
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { getThumbnailAsync } from "expo-video-thumbnails";
 
-export default function StartAlbumVideos() {
+const { width: screenWidth } = Dimensions.get('window');
+
+export default function StartAlbumPhotos() {
   const { albumId } = useLocalSearchParams<{ albumId: string }>();
   const [assets, setAssets] = useState<MediaLibrary.Asset[]>([]);
-  const [hasNextPage, setHasNextPage] = useState<boolean>(true);
-  const [endCursor, setEndCursor] = useState<string | undefined>();
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [resolvedUri, setResolvedUri] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [deletedVideos, setDeletedVideos] = useState<string[]>([]);
+  const [deletedPhotos, setDeletedPhotos] = useState<string[]>([]);
   const [showDeleteAnimation, setShowDeleteAnimation] = useState(false);
-  const videoRef = useRef<Video>(null);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  // Video player instance
+
   const translateX = useSharedValue(0);
   const rotation = useSharedValue(0);
   const likeOpacity = useSharedValue(0);
@@ -50,13 +45,11 @@ export default function StartAlbumVideos() {
       try {
         const page = await MediaLibrary.getAssetsAsync({
           album: String(albumId),
-          mediaType: MediaLibrary.MediaType.video,
-          first: 20,
+          mediaType: MediaLibrary.MediaType.photo,
+          first: 2000,
           sortBy: MediaLibrary.SortBy.creationTime,
         });
         setAssets(page.assets);
-        setEndCursor(page.endCursor);
-        setHasNextPage(page.hasNextPage);
         setCurrentIndex(0);
       } finally {
         setLoading(false);
@@ -70,108 +63,54 @@ export default function StartAlbumVideos() {
     likeOpacity.value = 0;
     nopeOpacity.value = 0;
 
-    if (!assets.length) return;
-
     (async () => {
       const asset = assets[currentIndex];
       if (!asset) {
-        console.warn("Video bulunamadı, bir sonrakine geçiliyor.");
-        runOnJS(goNext)();
+        setResolvedUri(null);
         return;
       }
-
-      try {
-        let info = await MediaLibrary.getAssetInfoAsync(asset, {
-          shouldDownloadFromNetwork: true,
-        });
-
-        let uri = info.localUri || asset.uri;
-        if (uri.startsWith("ph://") || uri.startsWith("assets-library://")) {
-          try {
-            const fileName = `${asset.filename || `video-${Date.now()}`}`;
-            const tempPath = `${FileSystem.cacheDirectory}${fileName}`;
-            await FileSystem.copyAsync({ from: asset.uri, to: tempPath });
-            uri = tempPath;
-            console.log("📦 Copied to cache:", uri);
-          } catch (err) {
-            console.warn("❗️FileSystem copy failed:", err);
-          }
-        }
-
-        console.log("🎬 Final resolved URI:", uri);
-        setResolvedUri(uri);
-      } catch (e) {
-        console.error("Error resolving video URI:", e);
-        setResolvedUri(null);
-      }
+      const info = await MediaLibrary.getAssetInfoAsync(asset.id);
+      setResolvedUri(info.localUri || asset.uri);
     })();
   }, [currentIndex, assets]);
-
-  const player = useVideoPlayer(resolvedUri ?? '', (p) => {
-    p.loop = false;
-  });
 
   const onSwipe = (action: 'like' | 'nope') => {
     const offScreenX = (action === 'like' ? 1 : -1) * screenWidth * 1.5;
     translateX.value = withSpring(offScreenX);
     rotation.value = withSpring(interpolate(offScreenX, [-screenWidth, screenWidth], [-45, 45]));
 
-    runOnJS(action === 'like' ? goNext : deleteCurrentVideo)();
+    runOnJS(action === 'like' ? goNext : deleteCurrentPhoto)();
   };
 
   const goNext = () => {
     if (currentIndex < assets.length - 1) {
       setCurrentIndex((i) => i + 1);
-    } else if (hasNextPage) {
-      loadMoreAssets();
     } else {
-      Alert.alert("Bilgi", "Bu albümdeki son videoda bulunuyorsunuz.");
-    }
-  };
-
-  const loadMoreAssets = async () => {
-    if (!hasNextPage || loading) return;
-
-    setLoading(true);
-    try {
-      const page = await MediaLibrary.getAssetsAsync({
-        album: String(albumId),
-        mediaType: MediaLibrary.MediaType.video,
-        first: 20,
-        after: endCursor,
-        sortBy: MediaLibrary.SortBy.creationTime,
-      });
-
-      if (page.assets.length > 0) {
-        setAssets(prev => [...prev, ...page.assets]);
-        setCurrentIndex(prev => prev + 1);
-      }
-      setEndCursor(page.endCursor);
-      setHasNextPage(page.hasNextPage);
-    } finally {
-      setLoading(false);
+      Alert.alert("Info", "You are at the last photo in this album.");
+      translateX.value = withSpring(0);
+      rotation.value = withSpring(0);
     }
   };
 
   const undoLastDelete = () => {
-    if (deletedVideos.length > 0) {
-      setDeletedVideos(prev => prev.slice(0, -1));
+    if (deletedPhotos.length > 0) {
+      setDeletedPhotos(prev => prev.slice(0, -1));
       if (currentIndex > 0) {
         setCurrentIndex((i) => i - 1);
       }
     }
   };
 
-  const deleteCurrentVideo = () => {
-    if (deletedVideos.length >= assets.length) return;
+  const deleteCurrentPhoto = () => {
+    if (deletedPhotos.length >= assets.length) return;
 
-    const currentVideo = assets[currentIndex];
-    if (currentVideo) {
-      const willBeLast = deletedVideos.length + 1 === assets.length;
-      setDeletedVideos(prev => [...prev, currentVideo.id]);
+    const currentPhoto = assets[currentIndex];
+    if (currentPhoto) {
+      const willBeLast = deletedPhotos.length + 1 === assets.length;
+      setDeletedPhotos(prev => [...prev, currentPhoto.id]);
 
       if (willBeLast) {
-        Alert.alert("Bilgi", "Tüm videolar silindi. Başka video kalmadı.");
+        Alert.alert("Info", "All photos have been deleted. There are no photos left.");
         return;
       }
 
@@ -215,28 +154,28 @@ export default function StartAlbumVideos() {
   const nopeLabelStyle = useAnimatedStyle(() => ({ opacity: nopeOpacity.value }));
 
   const handleDeleteAll = async () => {
-    if (deletedVideos.length === 0) {
-      Alert.alert("Bilgi", "Silinecek video bulunamadı.");
+    if (deletedPhotos.length === 0) {
+      Alert.alert("Info", "No photos to delete.");
       return;
     }
     Alert.alert(
-      "Videoları Sil",
-      `${deletedVideos.length} videoyu galeriden silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+      "Delete Photos",
+      `Are you sure you want to delete ${deletedPhotos.length} photos from the gallery? This action cannot be undone.`,
       [
-        { text: "İptal", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         {
-          text: "Sil",
+          text: "Delete",
           style: "destructive",
           onPress: async () => {
             setShowDeleteAnimation(true);
             try {
-              await MediaLibrary.deleteAssetsAsync(deletedVideos);
+              await MediaLibrary.deleteAssetsAsync(deletedPhotos);
               await new Promise(resolve => setTimeout(resolve, 2000));
-              router.replace(`/(tabs)/videolar/${albumId}`);
-              setTimeout(() => router.replace("/(tabs)/videolar"), 100);
+              router.replace(`/(tabs)/photos/${albumId}`);
+              setTimeout(() => router.replace("/(tabs)/photos"), 100);
             } catch (error) {
-              console.error("Error deleting videos:", error);
-              Alert.alert("Hata", "Videolar silinirken bir hata oluştu.");
+              console.error("Error deleting photos:", error);
+              Alert.alert("Error", "An error occurred while deleting photos.");
               setShowDeleteAnimation(false);
             }
           },
@@ -249,17 +188,17 @@ export default function StartAlbumVideos() {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity onPress={handleDeleteAll} className="mr-2 pr-3 pl-5 py-1">
-          <Text className="text-red-600 font-semibold">Sil</Text>
+          <Text className="text-red-600 font-semibold">Delete</Text>
         </TouchableOpacity>
       ),
     });
-  }, [navigation, deletedVideos]);
+  }, [navigation, deletedPhotos]);
 
   if (loading) return <View className="flex-1 items-center justify-center"><ActivityIndicator /></View>;
-  if (!assets.length) return <View className="flex-1 items-center justify-center p-6"><Text>Bu albümde video bulunamadı.</Text></View>;
+  if (!assets.length) return <View className="flex-1 items-center justify-center p-6"><Text>No photos found in this album.</Text></View>;
 
-  const progress = assets.length > 0 ? deletedVideos.length / assets.length : 0;
-  const currentVideoNumber = currentIndex + 1;
+  const progress = assets.length > 0 ? deletedPhotos.length / assets.length : 0;
+  const currentPhotoNumber = currentIndex + 1;
 
   return (
     <View className="flex-1">
@@ -267,19 +206,19 @@ export default function StartAlbumVideos() {
         <View className="absolute inset-0 bg-black/80 items-center justify-center z-50">
           <View className="bg-white rounded-2xl p-8 items-center justify-center">
             <Text className="text-2xl mb-2">🗑️</Text>
-            <Text className="text-lg font-semibold mb-2">Videolar siliniyor...</Text>
+            <Text className="text-lg font-semibold mb-2">Deleting photos...</Text>
             <ActivityIndicator size="large" color="#0066FF" />
           </View>
         </View>
       )}
-          {/** PROGRESS BAR KISMI*/ }
+          {/** PROGRESS BAR */ }
       <View className="absolute inset-x-0 top-0" style={{ paddingTop: isIOS18 ? insets.top - 40 : insets.top - 30, paddingHorizontal: 20, zIndex: 1000 }}>
         {isIOS18 ? (
           <View style={{ borderRadius: 20, overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
             <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
               <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-black text-sm font-semibold">{currentVideoNumber} / {assets.length}</Text>
-                <Text className="text-black text-sm">{deletedVideos.length} silindi</Text>
+                <Text className="text-black text-sm font-semibold">{currentPhotoNumber} / {assets.length}</Text>
+                <Text className="text-black text-sm">{deletedPhotos.length} deleted</Text>
               </View>
               <View className="h-2 bg-gray-300/50 rounded-full overflow-hidden">
                 <View className="h-full bg-blue-500 rounded-full" style={{ width: `${progress * 100}%` }} />
@@ -290,8 +229,8 @@ export default function StartAlbumVideos() {
           <GlassContainer style={{ borderRadius: 20, overflow: 'hidden' }}>
             <GlassView style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
               <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-black text-sm font-semibold">{currentVideoNumber} / {assets.length}</Text>
-                <Text className="text-black text-sm">{deletedVideos.length} silindi</Text>
+                <Text className="text-black text-sm font-semibold">{currentPhotoNumber} / {assets.length}</Text>
+                <Text className="text-black text-sm">{deletedPhotos.length} deleted</Text>
               </View>
               <View className="h-2 bg-gray-300/50 rounded-full overflow-hidden">
                 <View className="h-full bg-blue-500 rounded-full" style={{ width: `${progress * 100}%` }} />
@@ -300,13 +239,13 @@ export default function StartAlbumVideos() {
           </GlassContainer>
         )}
       </View>
-        {/* SİL SAKLA YAZILARI*/ }
+        {/* DELETE/KEEP LABELS */ }
       <View className="flex-1 items-center pt-24">
         <Animated.View className="absolute top-[40%] left-10 z-0 border-[5px] rounded-xl px-4 py-2 rotate-[-25deg]" style={[{ borderColor: '#4ade80' }, likeLabelStyle]}>
-          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#4ade80' }}>SAKLA</Text>
+          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#4ade80' }}>KEEP</Text>
         </Animated.View>
         <Animated.View className="absolute top-[40%] right-10 z-0 border-[5px] rounded-xl px-4 py-2 rotate-[-25deg]" style={[{ borderColor: '#f87171' }, nopeLabelStyle]}>
-          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#f87171' }}>SİL</Text>
+          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#f87171' }}>DELETE</Text>
         </Animated.View>
 
         {resolvedUri ? (
@@ -321,39 +260,35 @@ export default function StartAlbumVideos() {
                 className="w-11/12 h-4/5 rounded-3xl overflow-hidden shadow-2xl"
                 style={[{ backgroundColor: '#000' }, animatedStyle]}
               >
-                <VideoView
-                  key={resolvedUri}
-                  style={{ width: '100%', height: '100%' }}
-                  player={player}
-                  allowsFullscreen
-                  allowsPictureInPicture
-                  nativeControls
-                  resizeMode="contain"
+                <Image
+                  source={{ uri: resolvedUri }}
+                  className="w-full h-full"
+                  resizeMode="cover"
                 />
               </Animated.View>
             </GestureDetector>
           </Animated.View>
         ) : (
           <View className="w-11/12 h-3/5 items-center justify-center">
-            <Text className="text-white">Video yüklenemedi</Text>
+            <Text className="text-white">Image could not be loaded</Text>
           </View>
         )}
       </View>
-{/* SİL GEÇ GERİ BUTONLARI*/ }
+{/* DELETE/NEXT/UNDO BUTTONS */ }
 <View className="absolute inset-x-0 bottom-0 items-center justify-center" style={{ paddingBottom: insets.bottom + 75 }}>
 {isIOS18 ? (
             <View className="flex-row items-center justify-center gap-3">
-            <TouchableOpacity accessibilityLabel="Geri Al" activeOpacity={0.85} onPress={undoLastDelete}>
+            <TouchableOpacity accessibilityLabel="Undo" activeOpacity={0.85} onPress={undoLastDelete}>
               <View className="w-16 h-16 rounded-full" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
                 <View className="flex-1 items-center justify-center"><Text className="text-black text-3xl">↺</Text></View>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity accessibilityLabel="Sil" activeOpacity={0.9} onPress={() => onSwipe('nope')}>
+            <TouchableOpacity accessibilityLabel="Delete" activeOpacity={0.9} onPress={() => onSwipe('nope')}>
               <View className="w-20 h-20 rounded-full mx-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
                 <View className="flex-1 items-center justify-center"><Text className="text-blue-400 text-4xl">❌</Text></View>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity accessibilityLabel="Geç" activeOpacity={0.85} onPress={() => onSwipe('like')}>
+            <TouchableOpacity accessibilityLabel="Next" activeOpacity={0.85} onPress={() => onSwipe('like')}>
               <View className="w-16 h-16 rounded-full" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
                 <View className="flex-1 items-center justify-center"><Text className="text-pink-500 text-3xl">➜</Text></View>
               </View>
@@ -361,7 +296,7 @@ export default function StartAlbumVideos() {
           </View>
         ) : (
           <GlassContainer spacing={12} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}> 
-          <TouchableOpacity accessibilityLabel="Geri Al" activeOpacity={0.85} onPress={undoLastDelete}>
+          <TouchableOpacity accessibilityLabel="Undo" activeOpacity={0.85} onPress={undoLastDelete}>
             <GlassView style={styles.glassSmall} isInteractive>
               <View className="flex-1 items-center justify-center">
                 <Text className="text-black text-3xl">↺</Text>
@@ -369,7 +304,7 @@ export default function StartAlbumVideos() {
             </GlassView>
           </TouchableOpacity>
   
-          <TouchableOpacity accessibilityLabel="Sil" activeOpacity={0.9} onPress={deleteCurrentVideo}>
+          <TouchableOpacity accessibilityLabel="Delete" activeOpacity={0.9} onPress={deleteCurrentPhoto}>
             <GlassView style={styles.glassLarge} isInteractive>
               <View className="flex-1 items-center justify-center">
                 <Text className="text-blue-400 text-4xl">❌</Text>
@@ -377,7 +312,7 @@ export default function StartAlbumVideos() {
             </GlassView>
           </TouchableOpacity>
   
-          <TouchableOpacity accessibilityLabel="Geç" activeOpacity={0.85} onPress={goNext}>
+          <TouchableOpacity accessibilityLabel="Next" activeOpacity={0.85} onPress={goNext}>
             <GlassView style={styles.glassSmall} isInteractive>
               <View className="flex-1 items-center justify-center">
                 <Text className="text-pink-500 text-3xl">➜</Text>

@@ -21,8 +21,8 @@ export default function AlbumVideos() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Link href={`/(tabs)/videolar/start/${albumId}`} asChild>
-          <Text className="text-blue-600 px-3 py-1">Başla</Text>
+        <Link href={`/(tabs)/videos/start/${albumId}`} asChild>
+          <Text className="text-blue-600 px-3 py-1">Start</Text>
         </Link>
       ),
     });
@@ -45,8 +45,8 @@ export default function AlbumVideos() {
       try {
         const page = await MediaLibrary.getAssetsAsync({
           album: String(albumId),
-          mediaType: [MediaLibrary.MediaType.video], // array olarak dene
-          first: 1000, // sayfalama
+          mediaType: [MediaLibrary.MediaType.video], // try as an array
+          first: 1000, // pagination
           sortBy: MediaLibrary.SortBy.creationTime,
         });
         setAssets(page.assets);
@@ -67,19 +67,36 @@ export default function AlbumVideos() {
   if (!assets.length) {
     return (
       <View className="flex-1 items-center justify-center p-8">
-        <Text>Bu albümde video bulunamadı.</Text>
+        <Text>No videos found in this album.</Text>
       </View>
     );
   }
 
   return (
     <View style={{ flex: 1 }}>
+      {hasFailures ? (
+        <View
+          style={{
+            backgroundColor: "#fffbeb",
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            margin: 8,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: "#fef3c7",
+          }}
+        >
+          <Text style={{ color: "#7f2704", fontSize: 14, textAlign: "center", fontWeight: "bold" }}>
+            Some videos are inaccessible. There may be an iCloud or application restriction.
+          </Text>
+        </View>
+      ) : null}
       <FlatList
         data={assets}
         keyExtractor={(a) => a.id}
         key={`grid-${numColumns}`}
         numColumns={numColumns}
-        contentContainerStyle={{ padding: gutter, paddingBottom: hasFailures ? 48 : gutter }}
+        contentContainerStyle={{ padding: gutter, paddingTop: 0 }}
         renderItem={({ item }) => (
           <VideoThumb
             asset={item}
@@ -93,26 +110,6 @@ export default function AlbumVideos() {
           />
         )}
       />
-
-      {hasFailures ? (
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "#fef3c7",
-            borderTopWidth: 1,
-            borderColor: "#fde68a",
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-          }}
-        >
-          <Text style={{ color: "#92400e", fontSize: 12 }}>
-            Bazı videolara erişilemiyor. iCloud veya uygulama kısıtlaması olabilir.
-          </Text>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -130,7 +127,7 @@ function VideoThumb({ asset, size, onResolve }: { asset: MediaLibrary.Asset; siz
       try {
         let assetInfo = await MediaLibrary.getAssetInfoAsync(asset);
         if (!assetInfo.localUri && Platform.OS === "ios") {
-          // iCloud'daki öğeler için yerel kopyayı indirmeyi dene
+          // Try downloading a local copy for items in iCloud
           assetInfo = await MediaLibrary.getAssetInfoAsync(asset, { shouldDownloadFromNetwork: true });
         }
         const candidateUri = assetInfo.localUri || asset.uri; // prefer a file:// URI when available
@@ -169,7 +166,7 @@ function VideoThumb({ asset, size, onResolve }: { asset: MediaLibrary.Asset; siz
     };
   }, [asset.id, asset.uri]);
 
-  if (loading) return null; // izin yoksa/henüz hazır değilse bu öğeyi atla
+  if (loading) return null; // skip this item if permission is not granted/not ready yet
 
   // format duration mm:ss
   const totalSeconds = Math.max(0, Math.floor(asset.duration || 0));
@@ -180,7 +177,7 @@ function VideoThumb({ asset, size, onResolve }: { asset: MediaLibrary.Asset; siz
     .toString()
     .padStart(2, "0");
 
-  if (failed || !thumbUri) return null; // gösterilemiyorsa hiç render etme
+  if (failed || !thumbUri) return null; // do not render at all if it cannot be displayed
 
   return (
     <View style={{ width: size, height: size, margin: gutter, position: "relative" }}>

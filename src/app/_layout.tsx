@@ -9,7 +9,7 @@ export default function Layout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-          <StatusBar style="dark" />
+          <StatusBar style="auto" />
           <Slot />
         </SafeAreaView>
       </SafeAreaProvider>

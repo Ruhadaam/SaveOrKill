@@ -4,7 +4,7 @@ import * as MediaLibrary from "expo-media-library";
 import { BlurView } from "expo-blur";
 import { Link } from "expo-router";
 
-export default function VideolarIndex() {
+export default function VideosIndex() {
   const [permissionStatus, setPermissionStatus] = useState<MediaLibrary.PermissionStatus | null>(null);
   const [albums, setAlbums] = useState<{ album: MediaLibrary.Album; count: number }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ export default function VideolarIndex() {
       setPermissionStatus(status);
       return true;
     } catch (e) {
-      setError("İzin alınırken bir hata oluştu");
+      setError("An error occurred while getting permission");
       return false;
     }
   }
@@ -41,7 +41,7 @@ export default function VideolarIndex() {
       );
       setAlbums(withCounts.filter((x) => x.count > 0));
     } catch (e) {
-      setError("Albümler yüklenirken bir hata oluştu");
+      setError("An error occurred while loading albums");
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ export default function VideolarIndex() {
   if (permissionStatus !== "granted") {
     return (
       <View className="flex-1 items-center justify-center gap-3 p-4">
-        <Text className="text-lg text-center">Galeri erişimi gerekiyor.</Text>
+        <Text className="text-lg text-center">Gallery access is required.</Text>
         <Pressable
           onPress={async () => {
             const ok = await ensurePermission();
@@ -65,7 +65,7 @@ export default function VideolarIndex() {
           }}
           className="px-4 py-2 rounded-md bg-gray-900"
         >
-          <Text className="text-gray-50">İzin Ver</Text>
+          <Text className="text-gray-50">Allow Access</Text>
         </Pressable>
         {error ? <Text className="text-red-600 text-center">{error}</Text> : null}
       </View>
@@ -101,14 +101,14 @@ export default function VideolarIndex() {
             content
           );
           return (
-            <Link href={`/(tabs)/videolar/${item.album.id}`} asChild>
+            <Link href={`/(tabs)/videos/${item.album.id}`} asChild>
               <TouchableOpacity activeOpacity={0.7}>{wrapped}</TouchableOpacity>
             </Link>
           );
         }}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center p-8">
-            <Text>Video içeren albüm bulunamadı.</Text>
+            <Text>No albums containing videos were found.</Text>
           </View>
         }
       />
