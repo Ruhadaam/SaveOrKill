@@ -28,7 +28,9 @@
       {
         "origin": "https://n"
       }
-    ]
+    ],
+    "expo-video",
+    "expo-audio"
   ],
   "name": "my-app",
   "slug": "my-app"

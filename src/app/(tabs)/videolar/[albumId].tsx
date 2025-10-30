@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { View, FlatList, ActivityIndicator, Text, Image, Dimensions, Platform } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import { useLocalSearchParams } from "expo-router";
+import { Link, Stack, useLocalSearchParams, useNavigation } from "expo-router";
 import { getThumbnailAsync } from "expo-video-thumbnails";
 
 const gutter = 2;
@@ -15,6 +15,18 @@ export default function AlbumVideos() {
   const [permissionStatus, setPermissionStatus] = useState<MediaLibrary.PermissionStatus | null>(null);
   const [hasFailures, setHasFailures] = useState<boolean>(false);
   const failedReportedRef = useRef<Set<string>>(new Set());
+
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Link href={`/(tabs)/videolar/start/${albumId}`} asChild>
+          <Text className="text-blue-600 px-3 py-1">Başla</Text>
+        </Link>
+      ),
+    });
+  }, [navigation, albumId]);
 
   useEffect(() => {
     (async () => {
