@@ -1,23 +1,23 @@
 {
-  "scheme": "acme",
+  "name": "SaveOrKill",
+  "slug": "save-or-kill",
+  "scheme": "saveorkill",
+  "version": "1.0.0",
+  "orientation": "portrait",
   "userInterfaceStyle": "automatic",
-  "orientation": "default",
-  "ios": {
-    "infoPlist": {
-      "NSPhotoLibraryUsageDescription": "Uygulama fotoğraf ve video albümlerinizi listelemek için galerinizin erişimine ihtiyaç duyar."
-    },
-    "bundleIdentifier": "com.ruhadam.myapp"
+  "icon": "./assets/icon.png",
+  "splash": {
+    "image": "./assets/icon.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#ffffff"
   },
-  "android": {
-    "permissions": [
-      "READ_MEDIA_IMAGES",
-      "READ_MEDIA_VIDEO",
-      "READ_EXTERNAL_STORAGE",
-      "READ_MEDIA_IMAGES",
-      "READ_MEDIA_VIDEO",
-      "READ_EXTERNAL_STORAGE"
-    ],
-    "package": "com.ruhadam.myapp"
+  "ios": {
+    "supportsTablet": true,
+    "bundleIdentifier": "com.ruhadam.saveorkill",
+    "infoPlist": {
+      "NSPhotoLibraryUsageDescription": "SaveOrKill needs access to your photo and video library to display your media content.",
+      "ITSAppUsesNonExemptEncryption": false
+    }
   },
   "web": {
     "output": "static"
@@ -26,12 +26,26 @@
     [
       "expo-router",
       {
-        "origin": "https://n"
+        "origin": "https://localhost"
       }
     ],
     "expo-video",
     "expo-audio"
   ],
-  "name": "my-app",
-  "slug": "my-app"
+  "extra": {
+    "router": {
+      "origin": "https://localhost"
+    },
+    "eas": {
+      "projectId": "253f5214-e131-497f-9e8d-dee45dc8713d"
+    }
+  },
+  "owner": "ruhadam",
+  "android": {
+    "permissions": [
+      "android.permission.RECORD_AUDIO",
+      "android.permission.MODIFY_AUDIO_SETTINGS"
+    ],
+    "package": "com.ruhadam.saveorkill"
+  }
 }
