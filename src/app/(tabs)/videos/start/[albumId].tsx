@@ -303,10 +303,10 @@ export default function StartAlbumVideos() {
         {/* SİL SAKLA YAZILARI*/ }
       <View className="flex-1 items-center pt-24">
         <Animated.View className="absolute top-[40%] left-10 z-0 border-[5px] rounded-xl px-4 py-2 rotate-[-25deg]" style={[{ borderColor: '#4ade80' }, likeLabelStyle]}>
-          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#4ade80' }}>SAKLA</Text>
+          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#4ade80' }}>SAVE</Text>
         </Animated.View>
         <Animated.View className="absolute top-[40%] right-10 z-0 border-[5px] rounded-xl px-4 py-2 rotate-[-25deg]" style={[{ borderColor: '#f87171' }, nopeLabelStyle]}>
-          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#f87171' }}>SİL</Text>
+          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#f87171' }}>KILL</Text>
         </Animated.View>
 
         {resolvedUri ? (
@@ -343,17 +343,17 @@ export default function StartAlbumVideos() {
 <View className="absolute inset-x-0 bottom-0 items-center justify-center" style={{ paddingBottom: insets.bottom + 75 }}>
 {isIOS18 ? (
             <View className="flex-row items-center justify-center gap-3">
-            <TouchableOpacity accessibilityLabel="Geri Al" activeOpacity={0.85} onPress={undoLastDelete}>
+            <TouchableOpacity accessibilityLabel="Back" activeOpacity={0.85} onPress={undoLastDelete}>
               <View className="w-16 h-16 rounded-full" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
                 <View className="flex-1 items-center justify-center"><Text className="text-black text-3xl">↺</Text></View>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity accessibilityLabel="Sil" activeOpacity={0.9} onPress={() => onSwipe('nope')}>
+            <TouchableOpacity accessibilityLabel="Delete" activeOpacity={0.9} onPress={() => onSwipe('nope')}>
               <View className="w-20 h-20 rounded-full mx-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
                 <View className="flex-1 items-center justify-center"><Text className="text-blue-400 text-4xl">❌</Text></View>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity accessibilityLabel="Geç" activeOpacity={0.85} onPress={() => onSwipe('like')}>
+            <TouchableOpacity accessibilityLabel="Pass" activeOpacity={0.85} onPress={() => onSwipe('like')}>
               <View className="w-16 h-16 rounded-full" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
                 <View className="flex-1 items-center justify-center"><Text className="text-pink-500 text-3xl">➜</Text></View>
               </View>
@@ -361,7 +361,7 @@ export default function StartAlbumVideos() {
           </View>
         ) : (
           <GlassContainer spacing={12} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}> 
-          <TouchableOpacity accessibilityLabel="Geri Al" activeOpacity={0.85} onPress={undoLastDelete}>
+          <TouchableOpacity accessibilityLabel="Back" activeOpacity={0.85} onPress={undoLastDelete}>
             <GlassView style={styles.glassSmall} isInteractive>
               <View className="flex-1 items-center justify-center">
                 <Text className="text-black text-3xl">↺</Text>
@@ -369,7 +369,7 @@ export default function StartAlbumVideos() {
             </GlassView>
           </TouchableOpacity>
   
-          <TouchableOpacity accessibilityLabel="Sil" activeOpacity={0.9} onPress={deleteCurrentVideo}>
+          <TouchableOpacity accessibilityLabel="Delete" activeOpacity={0.9} onPress={deleteCurrentVideo}>
             <GlassView style={styles.glassLarge} isInteractive>
               <View className="flex-1 items-center justify-center">
                 <Text className="text-blue-400 text-4xl">❌</Text>
@@ -377,7 +377,7 @@ export default function StartAlbumVideos() {
             </GlassView>
           </TouchableOpacity>
   
-          <TouchableOpacity accessibilityLabel="Geç" activeOpacity={0.85} onPress={goNext}>
+          <TouchableOpacity accessibilityLabel="Pass" activeOpacity={0.85} onPress={goNext}>
             <GlassView style={styles.glassSmall} isInteractive>
               <View className="flex-1 items-center justify-center">
                 <Text className="text-pink-500 text-3xl">➜</Text>

@@ -242,10 +242,10 @@ export default function StartAlbumPhotos() {
         {/* DELETE/KEEP LABELS */ }
       <View className="flex-1 items-center pt-24">
         <Animated.View className="absolute top-[40%] left-10 z-0 border-[5px] rounded-xl px-4 py-2 rotate-[-25deg]" style={[{ borderColor: '#4ade80' }, likeLabelStyle]}>
-          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#4ade80' }}>KEEP</Text>
+          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#4ade80' }}>SAVE</Text>
         </Animated.View>
         <Animated.View className="absolute top-[40%] right-10 z-0 border-[5px] rounded-xl px-4 py-2 rotate-[-25deg]" style={[{ borderColor: '#f87171' }, nopeLabelStyle]}>
-          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#f87171' }}>DELETE</Text>
+          <Text className="text-[42px] font-bold tracking-[1.5px] uppercase" style={{ color: '#f87171' }}>KILL</Text>
         </Animated.View>
 
         {resolvedUri ? (

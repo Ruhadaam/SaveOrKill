@@ -1,22 +1,18 @@
 {
-  "name": "SaveOrKill",
+  "name": "Save Or Kill",
   "slug": "save-or-kill",
   "scheme": "saveorkill",
   "version": "1.0.0",
   "orientation": "portrait",
   "userInterfaceStyle": "automatic",
   "icon": "./assets/icon.png",
-  "splash": {
-    "image": "./assets/icon.png",
-    "resizeMode": "contain",
-    "backgroundColor": "#ffffff"
-  },
   "ios": {
     "supportsTablet": true,
     "bundleIdentifier": "com.ruhadam.saveorkill",
     "infoPlist": {
       "NSPhotoLibraryUsageDescription": "SaveOrKill needs access to your photo and video library to display your media content.",
-      "ITSAppUsesNonExemptEncryption": false
+      "ITSAppUsesNonExemptEncryption": false,
+      "UILaunchStoryboardName": ""
     }
   },
   "web": {
@@ -42,10 +38,6 @@
   },
   "owner": "ruhadam",
   "android": {
-    "permissions": [
-      "android.permission.RECORD_AUDIO",
-      "android.permission.MODIFY_AUDIO_SETTINGS"
-    ],
     "package": "com.ruhadam.saveorkill"
   }
 }
