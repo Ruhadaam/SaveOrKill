@@ -4,7 +4,7 @@
   "scheme": "saveorkill",
   "version": "1.0.0",
   "orientation": "portrait",
-  "userInterfaceStyle": "automatic",
+  "userInterfaceStyle": "light",
   "icon": "./assets/icon.png",
   "ios": {
     "supportsTablet": true,
@@ -12,7 +12,8 @@
     "infoPlist": {
       "NSPhotoLibraryUsageDescription": "SaveOrKill needs access to your photo and video library to display your media content.",
       "ITSAppUsesNonExemptEncryption": false,
-      "UILaunchStoryboardName": ""
+      "UILaunchStoryboardName": "",
+      "buildNumber": "1"
     }
   },
   "web": {

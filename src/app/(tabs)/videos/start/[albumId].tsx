@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useLayoutEffect, useRef } from "react";
 import { View, Image, ActivityIndicator, Text, TouchableOpacity, Alert, Platform, Dimensions,StyleSheet } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView, GlassContainer } from 'expo-glass-effect';
@@ -19,7 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 const { width: screenWidth } = Dimensions.get('window');
-import { useVideoPlayer, VideoView } from 'expo-video';
+import Video, { VideoRef } from 'react-native-video';
 import { getThumbnailAsync } from "expo-video-thumbnails";
 
 export default function StartAlbumVideos() {
@@ -32,10 +32,9 @@ export default function StartAlbumVideos() {
   const [loading, setLoading] = useState<boolean>(false);
   const [deletedVideos, setDeletedVideos] = useState<string[]>([]);
   const [showDeleteAnimation, setShowDeleteAnimation] = useState(false);
-  const videoRef = useRef<Video>(null);
+  const videoRef = useRef<VideoRef>(null);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  // Video player instance
   const translateX = useSharedValue(0);
   const rotation = useSharedValue(0);
   const likeOpacity = useSharedValue(0);
@@ -85,31 +84,63 @@ export default function StartAlbumVideos() {
           shouldDownloadFromNetwork: true,
         });
 
-        let uri = info.localUri || asset.uri;
-        if (uri.startsWith("ph://") || uri.startsWith("assets-library://")) {
+        // iOS gerçek cihazda /var/mobile/Media/DCIM/ dizinine doğrudan erişim izni yok
+        // Bu yüzden her zaman dosyayı cache'e kopyalamalıyız
+        let uri = info.localUri || info.uri || asset.uri;
+        
+        // URI'den fragment'ı (#) temizle - iOS'ta sorun yaratıyor
+        if (uri && uri.includes('#')) {
+          uri = uri.split('#')[0];
+        }
+        
+        // Eğer localUri /var/mobile/Media/ ile başlıyorsa, her zaman kopyala
+        // Çünkü bu dizine doğrudan erişim izni yok
+        const needsCopy = !uri || 
+          !uri.startsWith("file://") || 
+          uri.includes('/var/mobile/Media/') ||
+          uri.includes('/var/mobile/Library/');
+        
+        if (needsCopy) {
           try {
-            const fileName = `${asset.filename || `video-${Date.now()}`}`;
-            const tempPath = `${FileSystem.cacheDirectory}${fileName}`;
-            await FileSystem.copyAsync({ from: asset.uri, to: tempPath });
-            uri = tempPath;
-            console.log("📦 Copied to cache:", uri);
+            console.log("📦 Copying video to cache (real device):", uri || asset.uri);
+            const fileName = `${asset.filename || `video-${Date.now()}.${asset.uri?.split('.').pop() || 'mov'}`}`;
+            const cacheDir = (FileSystem as any).cacheDirectory || '';
+            const tempPath = `${cacheDir}${fileName}`;
+            
+            // Kopyalama için kaynak URI - fragment olmadan
+            const sourceUri = (info.localUri || info.uri || asset.uri)?.split('#')[0];
+            if (!sourceUri) {
+              throw new Error("No valid source URI found");
+            }
+            
+            await FileSystem.copyAsync({ from: sourceUri, to: tempPath });
+            uri = tempPath.startsWith("file://") ? tempPath : `file://${tempPath}`;
+            console.log("✅ Video copied to cache:", uri);
+            setResolvedUri(uri);
+            return;
           } catch (err) {
-            console.warn("❗️FileSystem copy failed:", err);
+            console.error("❗️FileSystem copy failed:", err);
+            setResolvedUri(null);
+            return;
           }
         }
 
-        console.log("🎬 Final resolved URI:", uri);
-        setResolvedUri(uri);
+        // Eğer zaten cache dizininde ise (file:// ile başlıyor ve /var/mobile/ içermiyor)
+        if (uri && uri.startsWith("file://") && !uri.includes('/var/mobile/')) {
+          console.log("🎬 Using cached URI:", uri);
+          setResolvedUri(uri);
+          return;
+        }
+
+        // URI hala geçerli değilse null set et
+        console.warn("⚠️ Invalid URI format for video:", uri);
+        setResolvedUri(null);
       } catch (e) {
         console.error("Error resolving video URI:", e);
         setResolvedUri(null);
       }
     })();
   }, [currentIndex, assets]);
-
-  const player = useVideoPlayer(resolvedUri ?? '', (p) => {
-    p.loop = false;
-  });
 
   const onSwipe = (action: 'like' | 'nope') => {
     const offScreenX = (action === 'like' ? 1 : -1) * screenWidth * 1.5;
@@ -248,10 +279,11 @@ export default function StartAlbumVideos() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity onPress={handleDeleteAll} className="mr-2 pr-3 pl-5 py-1">
+        <TouchableOpacity onPress={handleDeleteAll} style={{ marginRight: 8, paddingHorizontal: 12, paddingVertical: 4 }}>
           <Text className="text-red-600 font-semibold">Delete</Text>
         </TouchableOpacity>
       ),
+      headerBackVisible: true,
     });
   }, [navigation, deletedVideos]);
 
@@ -321,14 +353,26 @@ export default function StartAlbumVideos() {
                 className="w-11/12 h-4/5 rounded-3xl overflow-hidden shadow-2xl"
                 style={[{ backgroundColor: '#000' }, animatedStyle]}
               >
-                <VideoView
+                <Video
+                  ref={videoRef}
                   key={resolvedUri}
+                  source={{ uri: resolvedUri || '' }}
                   style={{ width: '100%', height: '100%' }}
-                  player={player}
-                  allowsFullscreen
-                  allowsPictureInPicture
-                  nativeControls
                   resizeMode="contain"
+                  repeat={false}
+                  paused={false}
+                  controls={true}
+                  allowsExternalPlayback={false}
+                  onError={(error) => {
+                    console.error("Video playback error:", error);
+                    console.error("Failed URI:", resolvedUri);
+                  }}
+                  onLoad={() => {
+                    console.log("Video loaded successfully");
+                  }}
+                  ignoreSilentSwitch="ignore"
+                  playInBackground={false}
+                  playWhenInactive={false}
                 />
               </Animated.View>
             </GestureDetector>
@@ -348,12 +392,12 @@ export default function StartAlbumVideos() {
                 <View className="flex-1 items-center justify-center"><Text className="text-black text-3xl">↺</Text></View>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity accessibilityLabel="Delete" activeOpacity={0.9} onPress={() => onSwipe('nope')}>
+            <TouchableOpacity accessibilityLabel="Delete" activeOpacity={0.9} onPress={deleteCurrentVideo}>
               <View className="w-20 h-20 rounded-full mx-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
                 <View className="flex-1 items-center justify-center"><Text className="text-blue-400 text-4xl">❌</Text></View>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity accessibilityLabel="Pass" activeOpacity={0.85} onPress={() => onSwipe('like')}>
+            <TouchableOpacity accessibilityLabel="Pass" activeOpacity={0.85} onPress={goNext}>
               <View className="w-16 h-16 rounded-full" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 }}>
                 <View className="flex-1 items-center justify-center"><Text className="text-pink-500 text-3xl">➜</Text></View>
               </View>

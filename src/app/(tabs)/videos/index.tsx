@@ -1,8 +1,29 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, FlatList, ActivityIndicator, Platform, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, FlatList, ActivityIndicator, Platform, TouchableOpacity } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import { BlurView } from "expo-blur";
 import { Link } from "expo-router";
+import { GlassView } from 'expo-glass-effect';
+
+const getAlbumEmoji = (albumTitle: string) => {
+  const lowerCaseTitle = albumTitle.toLowerCase();
+  if (lowerCaseTitle.includes("whatsapp")) return "💬";
+  if (lowerCaseTitle.includes("camera")) return "📸";
+  if (lowerCaseTitle.includes("screenshots")) return "🖼️";
+  if (lowerCaseTitle.includes("downloads")) return "📥";
+  if (lowerCaseTitle.includes("favorites")) return "⭐";
+  if (lowerCaseTitle.includes("selfies")) return "🤳";
+  if (lowerCaseTitle.includes("videos")) return "🎥";
+  if (lowerCaseTitle.includes("panoramas")) return "🏞️";
+  if (lowerCaseTitle.includes("live photos")) return "📹";
+  if (lowerCaseTitle.includes("bursts")) return "💥";
+  if (lowerCaseTitle.includes("instagram")) return "📸";
+  if (lowerCaseTitle.includes("snapchat")) return "👻";
+  if (lowerCaseTitle.includes("facebook")) return "👍";
+  if (lowerCaseTitle.includes("messenger")) return "💬";
+  if (lowerCaseTitle.includes("twitter")) return "🐦";
+  if (lowerCaseTitle.includes("tiktok")) return "🎵";
+  return "📁";
+};
 
 export default function VideosIndex() {
   const [permissionStatus, setPermissionStatus] = useState<MediaLibrary.PermissionStatus | null>(null);
@@ -29,7 +50,7 @@ export default function VideosIndex() {
     }
   }
 
-  async function loadVideoAlbums() {
+  const loadVideoAlbums = useCallback(async () => {
     setLoading(true);
     try {
       const result = await MediaLibrary.getAlbumsAsync({ includeSmartAlbums: true });
@@ -45,7 +66,7 @@ export default function VideosIndex() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -58,15 +79,16 @@ export default function VideosIndex() {
     return (
       <View className="flex-1 items-center justify-center gap-3 p-4">
         <Text className="text-lg text-center">Gallery access is required.</Text>
-        <Pressable
+        <TouchableOpacity
           onPress={async () => {
             const ok = await ensurePermission();
             if (ok) await loadVideoAlbums();
+            console.log("Permission granted to gallery");
           }}
           className="px-4 py-2 rounded-md bg-gray-900"
         >
-          <Text className="text-gray-50">Allow Access</Text>
-        </Pressable>
+          <Text className="text-gray-50">Allow Gallery Access</Text>
+        </TouchableOpacity>
         {error ? <Text className="text-red-600 text-center">{error}</Text> : null}
       </View>
     );
@@ -87,19 +109,26 @@ export default function VideosIndex() {
         keyExtractor={(a) => `${a.album.id}`}
         contentContainerStyle={{ padding: 16, gap: 12 }}
         renderItem={({ item }) => {
+          const majorVersion = Platform.OS === 'ios' ? parseInt(String(Platform.Version), 10) : 0;
+          const isIOS18 = majorVersion >= 18;
+
           const content = (
-            <View className="p-4 rounded-xl border border-gray-200 bg-white/80">
-              <Text className="text-base font-semibold">{item.album.title}</Text>
+            <View className="p-4">
+              <Text className="text-base font-semibold">{getAlbumEmoji(item.album.title)} {item.album.title}</Text>
               <Text className="text-xs text-gray-600 mt-1">{item.count} video</Text>
             </View>
           );
-          const wrapped = Platform.OS === "ios" ? (
-            <BlurView intensity={30} tint="systemMaterial" style={{ borderRadius: 12, overflow: "hidden" }}>
+
+          const wrapped = isIOS18 ? (
+            <View style={{ borderRadius: 12, overflow: "hidden", backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
               {content}
-            </BlurView>
+            </View>
           ) : (
-            content
+            <GlassView style={{ borderRadius: 12, overflow: "hidden" }}>
+              {content}
+            </GlassView>
           );
+
           return (
             <Link href={`/(tabs)/videos/${item.album.id}`} asChild>
               <TouchableOpacity activeOpacity={0.7}>{wrapped}</TouchableOpacity>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, FlatList, ActivityIndicator, Platform, TouchableOpacity } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import { Link, useFocusEffect } from "expo-router";
+import { Link } from "expo-router";
 import { GlassView } from 'expo-glass-effect';
 
 const getAlbumEmoji = (albumTitle: string) => {
@@ -72,15 +72,6 @@ export default function PhotosIndex() {
       if (ok) await loadPhotoAlbums();
     })();
   }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      (async () => {
-        const ok = await ensurePermission();
-        if (ok) await loadPhotoAlbums();
-      })();
-    }, [loadPhotoAlbums])
-  );
 
   if (permissionStatus !== "granted") {
     return (
